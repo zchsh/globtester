@@ -1,50 +1,65 @@
 mm = require('minimatch')
-zlib = require('zlib')
-qs = require('query-string')
-$ = require('zepto-browserify').$;
 
 #
-# utils
+# elements
 #
 
-validate = ->
-  results = $('.results').children()
-  prompt = $('.prompt').val()
+promptElem = document.querySelector(".prompt")
+resultsElem = document.querySelector(".results")
 
-  for div in results
-    method = if mm($(div).text(), prompt) then 'add' else 'remove'
-    $(div)["#{method}Class"]('match')
+#
+# "load" functionality
+#
 
-deflate_hash = (input, key) ->
-  zlib.deflate input, (err, res) ->
-    obj = {}
-    obj[key] = res.toString('base64')
-    location.hash += qs.stringify(obj)
-    location.hash += '&'
+loadFromQueryParams = ->
+  searchParams = new URL(window.location.href).searchParams
+  prompt_b64 = searchParams.get("prompt_b64")
+  results_b64 = searchParams.get("results_b64")
+  if prompt_b64
+    promptElem.value = atob(prompt_b64)
+  if results_b64
+    resultsElem.innerHTML = atob(results_b64)
+
+loadFromQueryParams()
+# re-load from query params if location state changes
+window.addEventListener('popstate', loadFromQueryParams);
 
 #
 # minimatch validation
 #
 
+validate = ->
+  results = resultsElem.childNodes
+  prompt = promptElem.value
+
+  for div in results
+    text = div.innerText
+    isMatch = mm(text, prompt)
+    method = if isMatch then 'add' else 'remove'
+    div.classList[method]("match")
+
+
 validate()
-$('.prompt').on('keyup', validate)
-$('.results').on('keyup', validate)
+
+promptElem.addEventListener('keyup', validate);
+resultsElem.addEventListener('keyup', validate);
+
+
 
 #
 # "save" functionality
 #
 
-params = qs.parse(location.hash)
+saveAsQueryParams = ->
+  prompt = promptElem.value
+  results = resultsElem.innerHTML
+  # Build search params
+  searchParams = new URL(window.location.href).searchParams
+  searchParams.set("prompt_b64", btoa(prompt))
+  searchParams.set("results_b64", btoa(results))
+  # Clear location has, set to new params
+  window.history.pushState( {} , prompt, "/?" + searchParams.toString() );
 
-if Object.keys(params).length
+saveElem = document.querySelector(".save")
+saveElem.addEventListener("click", saveAsQueryParams)
 
-  zlib.inflate new Buffer(params.p || params['#p'], 'base64'), (err, res) ->
-    $('.prompt').val(String(res))
-
-  zlib.inflate new Buffer(params.r || params['#r'], 'base64'), (err, res) ->
-    $('.results').html(String(res))
-
-$('.save').on 'click', ->
-  if (location.hash.length) then location.hash = ''
-  deflate_hash($('.prompt').val(), 'p')
-  deflate_hash($('.results').html(), 'r')
