@@ -15,8 +15,5 @@
     "roots-browserify": "0.3.x",
     "rupture": "0.6.x",
     "stylus": "0.51.x"
-  },
-  "engines": {
-    "node": "10.x"
   }
 }
