@@ -12,7 +12,7 @@
     "jade": "1.x",
     "minimatch": "3.0.4",
     "roots": "5.2.0",
-    "roots-browserify": "0.3.x",
+    "roots-browserify": "0.7.0",
     "rupture": "0.6.x",
     "stylus": "0.51.x"
   }
